@@ -66,4 +66,4 @@ if __name__ == "__main__":
                 print("Draw!")
             break
 
-        player = game.get_opponent(player)
+        player = game.get_opponent(player) 
