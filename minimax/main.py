@@ -1,11 +1,10 @@
 import numpy as np
 from random import choice
+import platform
+from os import system
 
 board_size = 3
-current_state = np.array([[0, 0, 0], 
-                          [0, 0, 0], 
-                          [0, 0, 0]])
-
+current_state = np.zeros((board_size, board_size))
 
 HUMAN = -1
 AI = 1
@@ -34,6 +33,17 @@ def check_winner(state, player):
 def is_game_over(state):
     return check_winner(state, HUMAN) or check_winner(state, AI) or len(get_possible_moves(state)) == 0
 
+def game_over(state):
+    if (check_winner(state, HUMAN)):
+        print('You won!')
+        exit()
+    elif (check_winner(state, AI)):
+        print('AI won!')
+        exit()
+    elif len(get_possible_moves(state)) == 0:
+        print('Draw!')
+        exit()
+
 def get_score(state, depth):
     if check_winner(state, AI):
         return 10 - depth
@@ -43,7 +53,6 @@ def get_score(state, depth):
         return 0
 
 def minimax(current_state, depth, player):
-    #print(current_state)
     if depth == 0 or is_game_over(current_state):
         return (-1, -1), get_score(current_state, depth)
 
@@ -54,7 +63,7 @@ def minimax(current_state, depth, player):
         for x, y in get_possible_moves(current_state):
             current_state[x][y] = player
             _, score = minimax(current_state, depth - 1, -player)
-            current_state[x][y] = 0  # Undo move
+            current_state[x][y] = 0
             
             if score > best_score:
                 best_score = score
@@ -64,7 +73,7 @@ def minimax(current_state, depth, player):
         for x, y in get_possible_moves(current_state):
             current_state[x][y] = player
             _, score = minimax(current_state, depth - 1, AI)
-            current_state[x][y] = 0  # Undo move
+            current_state[x][y] = 0
             
             if score < best_score:
                 best_score = score
@@ -73,8 +82,7 @@ def minimax(current_state, depth, player):
     return best_move, best_score
 
 def AIturn():
-    possible_moves = get_possible_moves(current_state)
-    depth = len(possible_moves)
+    depth = len(get_possible_moves(current_state))
 
     if depth == 9:
         x = choice([0, 1, 2])
@@ -82,49 +90,90 @@ def AIturn():
     else:
         move, _ = minimax(current_state, 9, AI)
         x, y = move
-        print(x, y)
 
     current_state[x][y] = AI
 
 
 def human_turn():
-    """
-    The Human plays choosing a valid move.
-    :param c_choice: computer's choice X or O
-    :param h_choice: human's choice X or O
-    :return:
-    """
-    possible_moves = get_possible_moves(current_state)
-    depth = len(possible_moves)
+    depth = len(get_possible_moves(current_state))
 
     if depth == 0 or is_game_over(current_state):
         return
     
-    move = -1
-    moves = {
-        1: [0, 0], 2: [0, 1], 3: [0, 2],
-        4: [1, 0], 5: [1, 1], 6: [1, 2],
-        7: [2, 0], 8: [2, 1], 9: [2, 2],
-    }
-
-    while move < 1 or move > 9:
+    row = -1
+    col = -1
+    while row < 1 or row > 3 or col < 1 or col > 3:
         try:
-            move = int(input('Use numpad (1..9): '))
-            coord = moves[move]
-            current_state[coord[0]][coord[1]] = HUMAN
+            print('Your turn!')
+            row = int(input('row (1-3): '))
+            col = int(input('column (1-3): '))
+            current_state[row-1][col-1] = HUMAN
 
         except (EOFError, KeyboardInterrupt):
-            print('Bye')
+            print('\nBye!')
             exit()
         except (KeyError, ValueError):
             print('Bad choice')
 
 
-if __name__ == '__main__':
-    possible_moves = get_possible_moves(current_state)
-    while len(possible_moves) > 0 and not is_game_over(current_state):
-        AIturn()
-        print(current_state)
-        human_turn()
+def display(state):
+    for i in range(board_size):
+        print('---------------')
+        print('|', end='')
+        for j in range(board_size):
+            if state[i][j] == -1:
+                print(' X', end=' ')
+            elif state[i][j] == 1:
+                print(' O', end=' ')
+            else:
+                print('  ', end=' ')
+            if j < 2: print('||', end='')
+        print('|')
+    print('---------------')
 
-    print(current_state)
+
+def clean_terminal():
+    os_name = platform.system().lower()
+    if 'windows' in os_name:
+        system('cls')
+    else:
+        system('clear')
+
+
+if __name__ == '__main__':
+    clean_terminal()
+    ans = -1
+
+    while ans != 'y' and ans != 'n':
+        try:
+            ans = input('Do you want to go first? (y/n) ')
+            print(ans)
+
+        except (EOFError, KeyboardInterrupt):
+            print('\nBye!')
+            exit()
+        except (KeyError, ValueError):
+            print('Bad choice')
+
+    if ans == 'n':
+        while len(get_possible_moves(current_state)) > 0 and not is_game_over(current_state):
+            AIturn()
+            if (is_game_over(current_state)):
+                game_over(current_state)
+            display(current_state)
+            human_turn()
+            if (is_game_over(current_state)):
+                game_over(current_state)
+    else:
+        HUMAN = 1
+        AI = -1
+        while len(get_possible_moves(current_state)) > 0 and not is_game_over(current_state):
+            display(current_state)
+            human_turn()
+            if (is_game_over(current_state)):
+                game_over(current_state)
+            AIturn()
+            if (is_game_over(current_state)):
+                game_over(current_state)
+
+    display(current_state)
