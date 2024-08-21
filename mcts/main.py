@@ -11,7 +11,7 @@ class TicTacToe:
         return np.zeros((self.row_count, self.column_count))
 
     def get_next_state(self, state, action, player):
-        row = action //self.column_count
+        row = action // self.column_count
         column = action % self.column_count
         state[row][column] = player
         return state
