@@ -1,5 +1,4 @@
 import numpy as np
-from random import choice
 import platform
 from os import system
 from math import inf
@@ -59,15 +58,6 @@ def get_score(state, depth):
         return 0
 
 
-def best_action(best_move, score, best_score, x, y):
-    if score > best_score:
-        best_score = score
-        best_move = (x, y)
-    if score == best_score:
-        best_move = choice([best_move, best_move, (x, y)])
-    return best_move, best_score
-
-
 def minimax(current_state, depth, player, alpha, beta):
     best_move = (-1, -1)
     
@@ -81,7 +71,9 @@ def minimax(current_state, depth, player, alpha, beta):
             _, score = minimax(current_state, depth - 1, -player, alpha, beta)
             current_state[x][y] = 0
             
-            best_move, best_score = best_action(best_move, score, best_score, x, y)
+            if score > best_score:
+                best_score = score
+                best_move = (x, y)
 
             alpha = max(alpha, best_score)
             if beta <= alpha:
@@ -93,7 +85,9 @@ def minimax(current_state, depth, player, alpha, beta):
             _, score = minimax(current_state, depth - 1, AI, alpha, beta)
             current_state[x][y] = 0
             
-            best_move, best_score = best_action(best_move, score, best_score, x, y)
+            if score < best_score:
+                best_score = score
+                best_move = (x, y)
 
             beta = min(beta, best_score)
             if beta <= alpha:
