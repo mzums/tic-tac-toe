@@ -42,7 +42,6 @@ def detect_grid_center(image, closed_edges, contours, filled, draw=False):
     all_contours_img = image.copy()
     cv2.drawContours(all_contours_img, contours, -1, (0,255,0), 2)
     show_image('6. All Contours', all_contours_img) if draw else None
-    cv2.waitKey(0)
 
     for cnt in contours:
         M = cv2.moments(cnt)
@@ -74,14 +73,46 @@ def detect_grid_center(image, closed_edges, contours, filled, draw=False):
     else:
         print("Middle cell not found")
 
-    get_center_size(cx, cy, filled)
+    get_center_size(cx, cy, filled, closed_edges, image)
 
     show_image('7. Final Result', result) if draw else None
-    cv2.waitKey(0)
     cv2.destroyAllWindows()
 
 
-def get_center_size(cx, cy, filled):
+def extract_cells(filled, left, top, right, bottom, original_image):
+    cell_w = right - left
+    cell_h = bottom - top
+    spacing = 7
+    
+    cells = []
+    
+    debug_image = original_image.copy()
+    
+    for row_offset in (-1, 0, 1):
+        for col_offset in (-1, 0, 1):
+            x1 = max(left + col_offset * (cell_w + spacing), 0)
+            y1 = max(top + row_offset * (cell_h + spacing), 0)
+            x2 = min(x1 + cell_w, original_image.shape[1])
+            y2 = min(y1 + cell_h, original_image.shape[0])
+            
+            cell = original_image[y1:y2, x1:x2]
+            
+            if cell.size == 0:
+                cell = np.zeros((cell_h, cell_w, 3), dtype=np.uint8)
+            
+            cells.append(cell)
+            
+            cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+
+    show_image("title", debug_image)
+    
+    for idx, cell in enumerate(cells):
+        cv2.imshow(f'Komorka {idx+1}', cell)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+
+def get_center_size(cx, cy, filled, closed_edges, image):
     h, w = filled.shape
 
     left = cx
@@ -112,7 +143,8 @@ def get_center_size(cx, cy, filled):
     cv2.rectangle(result, (left, top), (right, bottom), (0,0,255), 2)
 
     show_image("title", result)
-    cv2.waitKey(0)
+
+    extract_cells(filled, left, top, right, bottom, image)
 
 
 if __name__ == '__main__':
