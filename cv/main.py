@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from cross import *
 
 
 def show_image(title, image):
@@ -85,6 +86,7 @@ def extract_cells(filled, left, top, right, bottom, original_image):
     spacing = 7
     
     cells = []
+    board = []
     
     debug_image = original_image.copy()
     
@@ -104,12 +106,57 @@ def extract_cells(filled, left, top, right, bottom, original_image):
             
             cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
-    show_image("title", debug_image)
+    #show_image("title", debug_image)
     
     for idx, cell in enumerate(cells):
-        cv2.imshow(f'Komorka {idx+1}', cell)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        label = predict_cell(cell)
+
+        if label == "circle":
+            board.append("| O")
+        elif label == "cross":
+            board.append("| X")
+        else:
+            board.append("|  ")
+        #show_image(f'Cell {idx+1, label}', cell)
+
+    for (idx, i) in enumerate(board):
+        print(i, end=" ")
+        if (idx+1) % 3 == 0:
+            print("|", end="")
+            print()
+
+
+def check_circle(cell):
+    detected_circles = cv2.HoughCircles(cell,  
+                   cv2.HOUGH_GRADIENT, 1, 20, param1 = 60, 
+               param2 = 20, minRadius = 1, maxRadius = 40)
+    
+    if detected_circles is not None: 
+        detected_circles = np.uint16(np.around(detected_circles)) 
+    
+        for pt in detected_circles[0, :]: 
+            a, b, r = pt[0], pt[1], pt[2] 
+            cv2.circle(cell, (a, b), r, (0, 255, 0), 2) 
+            cv2.circle(cell, (a, b), 1, (0, 0, 255), 3) 
+
+        return True
+
+
+def predict_cell(cell):
+    if cell is None or cell.size == 0:
+        print("Empty cell received")
+        return "unknown"
+    
+    if len(cell.shape) == 3:
+        gray_cell = cv2.cvtColor(cell, cv2.COLOR_BGR2GRAY)
+    else:
+        gray_cell = cell.copy()
+
+    if check_circle(gray_cell):
+        return "circle"
+    elif detect_cross(cell):
+        return "cross"
+    
 
 
 def get_center_size(cx, cy, filled, closed_edges, image):
@@ -142,7 +189,7 @@ def get_center_size(cx, cy, filled, closed_edges, image):
     
     cv2.rectangle(result, (left, top), (right, bottom), (0,0,255), 2)
 
-    show_image("title", result)
+    #show_image("title", result)
 
     extract_cells(filled, left, top, right, bottom, image)
 
