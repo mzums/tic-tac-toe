@@ -1,9 +1,14 @@
 import cv2
 import numpy as np
 from main import *
+import sys
+import os
+
+
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
 
 def draw_lines(image, lines, color=(0, 255, 0), thickness=2):
-    """Rysuje linie na obrazie"""
     if lines is not None:
         for line in lines:
             x1, y1, x2, y2 = line[0]
@@ -29,13 +34,13 @@ def detect_cross(cell):
         line_image = cell.copy()
         line_image = draw_lines(line_image, lines)
         
-        """cv2.imshow("Original", image)
+        """cv2.imshow("Original", cell)
         cv2.imshow("Edges", edges)
         cv2.imshow("Detected Lines", line_image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()"""
-    else:
-        print("Nie znaleziono linii")
+    #else:
+        #print("Nie znaleziono linii")
     
     #show_image("", edges)
     
@@ -64,7 +69,7 @@ def detect_cross(cell):
             line1 = diagonal_lines[i]
             line2 = diagonal_lines[j]
             
-            print(line_intersection(line1, line2))
+            #print(line_intersection(line1, line2))
             intersect = line_intersection(line1, line2)
             if intersect is None:
                 continue
@@ -72,8 +77,8 @@ def detect_cross(cell):
             distance = np.hypot(intersect[0]-center[0], intersect[1]-center[1])
             angle_diff = abs(get_angle(line1) - get_angle(line2))
 
-            print(distance, min_intersection_distance)
-            print(angle_diff)
+            #print(distance, min_intersection_distance)
+            #print(angle_diff)
             
             if 70 < angle_diff < 100:
                 return True

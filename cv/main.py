@@ -1,6 +1,12 @@
 import cv2
 import numpy as np
-from cross import *
+from cv.cross import *
+from minimax.main import display
+import sys
+import os
+
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
 def show_image(title, image):
@@ -13,6 +19,11 @@ def preprocess(image_path, draw = False):
     if image is None:
         print("Error: Couldn't load the image")
         return
+    
+    h, w = image.shape[:2]
+    new_width = 200
+    new_height = int(h * (new_width / w))
+    image = cv2.resize(image, (new_width, new_height))
     
     show_image("1. Original", image) if draw else None
     
@@ -32,7 +43,13 @@ def preprocess(image_path, draw = False):
     cv2.drawContours(filled, contours, -1, 255, thickness=cv2.FILLED)
     show_image('5. Filled Contours', filled) if draw else None
 
-    return image, closed_edges, contours, filled
+    if image is not None:
+        #print("b")
+        #print(detect_grid_center(image, closed_edges, contours, filled))
+        return detect_grid_center(image, closed_edges, contours, filled)
+    else:
+        print("Failed to process image.")
+        #sys.exit(1)
 
 
 def detect_grid_center(image, closed_edges, contours, filled, draw=False):
@@ -55,7 +72,7 @@ def detect_grid_center(image, closed_edges, contours, filled, draw=False):
         distance = np.sqrt((cx - center_point[0])**2 + (cy - center_point[1])**2)
         
         area = cv2.contourArea(cnt)
-        x,y,w,h = cv2.boundingRect(cnt)
+        _,_,w,h = cv2.boundingRect(cnt)
         aspect_ratio = float(w)/h
         
         if area > 2000 and 0.7 < aspect_ratio < 1.3 and distance < min_distance:
@@ -70,17 +87,19 @@ def detect_grid_center(image, closed_edges, contours, filled, draw=False):
         
         cv2.drawContours(result, [best_contour], -1, (0,255,0), 3)
         cv2.circle(result, (cx, cy), 10, (0,0,255), -1)
-        print(f"Center of middle cell: ({cx}, {cy})")
+        #print(f"Center of middle cell: ({cx}, {cy})")
     else:
         print("Middle cell not found")
 
-    get_center_size(cx, cy, filled, closed_edges, image)
+    #print("c")
+    #print(get_center_size(cx, cy, filled, closed_edges, image))
+    return get_center_size(cx, cy, filled, closed_edges, image)
 
     show_image('7. Final Result', result) if draw else None
     cv2.destroyAllWindows()
 
 
-def extract_cells(filled, left, top, right, bottom, original_image):
+def extract_cells(left, top, right, bottom, original_image):
     cell_w = right - left
     cell_h = bottom - top
     spacing = 7
@@ -112,18 +131,18 @@ def extract_cells(filled, left, top, right, bottom, original_image):
         label = predict_cell(cell)
 
         if label == "circle":
-            board.append("| O")
+            board.append(1)
         elif label == "cross":
-            board.append("| X")
+            board.append(-1)
         else:
-            board.append("|  ")
+            board.append(0)
         #show_image(f'Cell {idx+1, label}', cell)
 
-    for (idx, i) in enumerate(board):
-        print(i, end=" ")
-        if (idx+1) % 3 == 0:
-            print("|", end="")
-            print()
+    board = np.resize(board, (3, 3))
+
+    display(board)
+    #print("a")
+    return board
 
 
 def check_circle(cell):
@@ -190,10 +209,22 @@ def get_center_size(cx, cy, filled, closed_edges, image):
     cv2.rectangle(result, (left, top), (right, bottom), (0,0,255), 2)
 
     #show_image("title", result)
-
-    extract_cells(filled, left, top, right, bottom, image)
+    #print("d")
+    #print(extract_cells(left, top, right, bottom, image))
+    return extract_cells(left, top, right, bottom, image)
 
 
 if __name__ == '__main__':
-    image, closed_edges, contours, filled = preprocess('image3.jpg')
-    detect_grid_center(image, closed_edges, contours, filled)
+    ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp'}
+
+    if len(sys.argv) < 2:
+        print("Usage: python -m cv.main <path_to_image>")
+        sys.exit(1)
+
+    image_path = sys.argv[1]
+    if not any(image_path.lower().endswith(ext) for ext in ALLOWED_EXTENSIONS):
+        print("Unsupported file format")
+        sys.exit(1)
+        
+    board = preprocess(image_path)
+
