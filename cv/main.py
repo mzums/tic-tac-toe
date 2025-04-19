@@ -46,7 +46,7 @@ def preprocess(image_path, draw = False):
     if image is not None:
         #print("b")
         #print(detect_grid_center(image, closed_edges, contours, filled))
-        return detect_grid_center(image, closed_edges, contours, filled)
+        return detect_grid_center(image, closed_edges, contours, filled, draw)
     else:
         print("Failed to process image.")
         #sys.exit(1)
@@ -93,41 +93,16 @@ def detect_grid_center(image, closed_edges, contours, filled, draw=False):
 
     #print("c")
     #print(get_center_size(cx, cy, filled, closed_edges, image))
-    return get_center_size(cx, cy, filled, closed_edges, image)
-
     show_image('7. Final Result', result) if draw else None
-    cv2.destroyAllWindows()
+
+    return get_center_size(cx, cy, filled, image, draw)
 
 
-def extract_cells(left, top, right, bottom, original_image):
-    cell_w = right - left
-    cell_h = bottom - top
-    spacing = 7
-    
-    cells = []
+def extract_cells(left, top, right, bottom, original_image, draw=False):
+    cells, _ = divide_cells(left, top, right, bottom, original_image, draw)
     board = []
-    
-    debug_image = original_image.copy()
-    
-    for row_offset in (-1, 0, 1):
-        for col_offset in (-1, 0, 1):
-            x1 = max(left + col_offset * (cell_w + spacing), 0)
-            y1 = max(top + row_offset * (cell_h + spacing), 0)
-            x2 = min(x1 + cell_w, original_image.shape[1])
-            y2 = min(y1 + cell_h, original_image.shape[0])
-            
-            cell = original_image[y1:y2, x1:x2]
-            
-            if cell.size == 0:
-                cell = np.zeros((cell_h, cell_w, 3), dtype=np.uint8)
-            
-            cells.append(cell)
-            
-            cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
-    #show_image("title", debug_image)
-    
-    for idx, cell in enumerate(cells):
+    for cell in cells:
         label = predict_cell(cell)
 
         if label == "circle":
@@ -143,6 +118,37 @@ def extract_cells(left, top, right, bottom, original_image):
     display(board)
     #print("a")
     return board
+
+
+def divide_cells(left, top, right, bottom, original_image, draw):
+    cell_w = right - left
+    cell_h = bottom - top
+    spacing = 7
+    cells = []
+    coordinates = []
+
+    debug_image = original_image.copy()
+    
+    for row_offset in (-1, 0, 1):
+        for col_offset in (-1, 0, 1):
+            x1 = max(left + col_offset * (cell_w + spacing), 0)
+            y1 = max(top + row_offset * (cell_h + spacing), 0)
+            x2 = min(x1 + cell_w, original_image.shape[1])
+            y2 = min(y1 + cell_h, original_image.shape[0])
+            
+            cell = original_image[y1:y2, x1:x2]
+            
+            cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0,0,255), 2) if draw else None
+
+            if cell.size == 0:
+                cell = np.zeros((cell_h, cell_w, 3), dtype=np.uint8)
+            
+            cells.append(cell)
+            coordinates.append((x1, y1, x2, y2))
+
+    show_image("9", debug_image) if draw else None
+            
+    return cells, coordinates
 
 
 def check_circle(cell):
@@ -178,7 +184,7 @@ def predict_cell(cell):
     
 
 
-def get_center_size(cx, cy, filled, closed_edges, image):
+def get_center_size(cx, cy, filled, image, draw=False):
     h, w = filled.shape
 
     left = cx
@@ -208,10 +214,11 @@ def get_center_size(cx, cy, filled, closed_edges, image):
     
     cv2.rectangle(result, (left, top), (right, bottom), (0,0,255), 2)
 
-    #show_image("title", result)
+    show_image("8", result) if draw else None
     #print("d")
     #print(extract_cells(left, top, right, bottom, image))
-    return extract_cells(left, top, right, bottom, image)
+    coordinates = [left, top, right, bottom]
+    return coordinates, extract_cells(left, top, right, bottom, image, draw)
 
 
 if __name__ == '__main__':
@@ -226,5 +233,5 @@ if __name__ == '__main__':
         print("Unsupported file format")
         sys.exit(1)
         
-    board = preprocess(image_path)
+    _, board = preprocess(image_path)
 

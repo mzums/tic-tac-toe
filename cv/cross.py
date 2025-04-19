@@ -50,7 +50,6 @@ def detect_cross(cell):
     h, w = gray.shape
     center = (w//2, h//2)
     angle_tolerance = 25
-    min_intersection_distance = max(w, h)//3
 
     diagonal_lines = []
     for line in lines:
