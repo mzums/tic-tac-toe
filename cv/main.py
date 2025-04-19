@@ -160,7 +160,7 @@ def check_circle(cell):
         detected_circles = np.uint16(np.around(detected_circles)) 
     
         for pt in detected_circles[0, :]: 
-            a, b, r = pt[0], pt[1], pt[2] 
+            a, b, r = pt[0], pt[1], pt[2]
             cv2.circle(cell, (a, b), r, (0, 255, 0), 2) 
             cv2.circle(cell, (a, b), 1, (0, 0, 255), 3) 
 
@@ -182,7 +182,6 @@ def predict_cell(cell):
     elif detect_cross(cell):
         return "cross"
     
-
 
 def get_center_size(cx, cy, filled, image, draw=False):
     h, w = filled.shape
