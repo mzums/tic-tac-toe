@@ -57,8 +57,9 @@ if __name__ == '__main__':
         print("Invalid input! Please enter X or O")
         player = input("Whose turn is it? [X/O]: ").lower()
     
-    pl = -1 if player == "x" else 1
-    move, _ = minimax(board, 9, pl, -1000, 1000)
+
+    ai_player = 1
+    move, _ = minimax(board, len(get_possible_moves(board)), True, -float('inf'), float('inf'))
     x, y = move
     print(move)
     
@@ -67,7 +68,7 @@ if __name__ == '__main__':
     
     draw_symbol(image, cell_coords, player.upper())
     
-    cv2.imshow("Result", image)
+    """cv2.imshow("Result", image)
     cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    cv2.destroyAllWindows()"""
     

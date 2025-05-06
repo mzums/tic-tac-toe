@@ -12,16 +12,11 @@ current_state = np.zeros((BOARD_SIZE, BOARD_SIZE))
 
 
 def get_possible_moves(state):
-    possible_moves = []
-    for i in range(BOARD_SIZE):
-        for j in range(BOARD_SIZE):
-            if state[i][j] == 0:
-                possible_moves.append((i, j))
-    return possible_moves
+    return [(i, j) for i in range(3) for j in range(3) if state[i][j] == 0]
 
 
 def check_winner(state, player):
-    win_state = [
+    win_patterns = [
         [state[0][0], state[0][1], state[0][2]],
         [state[1][0], state[1][1], state[1][2]],
         [state[2][0], state[2][1], state[2][2]],
@@ -29,13 +24,13 @@ def check_winner(state, player):
         [state[0][1], state[1][1], state[2][1]],
         [state[0][2], state[1][2], state[2][2]],
         [state[0][0], state[1][1], state[2][2]],
-        [state[2][0], state[1][1], state[0][2]],
+        [state[2][0], state[1][1], state[0][2]]
     ]
-    return [player, player, player] in win_state
+    return any(all(cell == player for cell in pattern) for pattern in win_patterns)
 
 
 def is_game_over(state):
-    return check_winner(state, HUMAN) or check_winner(state, AI) or len(get_possible_moves(state)) == 0
+    return check_winner(state, -1) or check_winner(state, 1) or len(get_possible_moves(state)) == 0
 
 
 def game_over(state):
@@ -50,55 +45,68 @@ def game_over(state):
     exit()
 
 
-def get_score(state, depth):
-    if check_winner(state, AI):
-        return 10 - depth
-    elif check_winner(state, HUMAN):
-        return depth - 10
-    else:
-        return 0
+def get_ai_move(state):
+    depth = len(get_possible_moves(state))
+    move, _ = minimax(state, depth, True, -float('inf'), float('inf'))
+    return move
 
-
-def minimax(current_state, depth, player, alpha, beta):
-    best_move = (-1, -1)
+def minimax(state, depth, is_maximizing, alpha, beta):
+    if check_winner(state, 1):
+        return (None, 1000 + depth)
+    elif check_winner(state, -1):
+        return (None, -1000 - depth)
+    elif len(get_possible_moves(state)) == 0:
+        return (None, 0)
     
-    if depth == 0 or is_game_over(current_state):
-        return best_move, get_score(current_state, depth)
-    
-    if player == AI:
-        best_score = -inf
-        for x, y in get_possible_moves(current_state):
-            current_state[x][y] = player
-            _, score = minimax(current_state, depth - 1, -player, alpha, beta)
-            current_state[x][y] = 0
+    if is_maximizing:
+        best_score = -float('inf')
+        best_move = None
+        
+        for move in get_possible_moves(state):
+            x, y = move
+            new_state = state.copy()
+            new_state[x][y] = 1
+            
+            _, score = minimax(new_state, depth-1, False, alpha, beta)
             
             if score > best_score:
                 best_score = score
-                best_move = (x, y)
-
-            alpha = max(alpha, best_score)
+                best_move = move
+                alpha = max(alpha, score)
+                
             if beta <= alpha:
-                break  # Beta cut-off
+                break
+        return (best_move, best_score)
+    
     else:
-        best_score = inf
-        for x, y in get_possible_moves(current_state):
-            current_state[x][y] = player
-            _, score = minimax(current_state, depth - 1, AI, alpha, beta)
-            current_state[x][y] = 0
+        best_score = float('inf')
+        best_move = None
+        
+        for move in get_possible_moves(state):
+            x, y = move
+            new_state = state.copy()
+            new_state[x][y] = -1
+            
+            _, score = minimax(new_state, depth-1, True, alpha, beta)
             
             if score < best_score:
                 best_score = score
-                best_move = (x, y)
-
-            beta = min(beta, best_score)
+                best_move = move
+                beta = min(beta, score)
+                
             if beta <= alpha:
-                break  # Alpha cut-off
+                break
+        return (best_move, best_score)
 
-    return best_move, best_score
-
+def get_score(state, depth):
+    if check_winner(state, AI):
+        return 1000 + (100 * depth)
+    elif check_winner(state, HUMAN):
+        return -1000 - (100 * depth)
+    return 0
 
 def AIturn():
-    move, _ = minimax(current_state, 9, AI, -1000, 1000)
+    move = get_ai_move(current_state, AI)
     x, y = move
     current_state[x][y] = AI
 
